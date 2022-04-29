@@ -457,3 +457,5 @@ if __name__ == "__main__":
     train_video_name = args[1]
     val_video_name = args[2]
     main(train_video_name, val_video_name)
+
+# test
