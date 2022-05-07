@@ -1,9 +1,7 @@
 """
 特徴抽出に用いるモデルを定義
-2022/4/24に追記
-author: Yuma Takeda
+author: Kouki Nishimoto, Yuma Takeda
 """
-# --- Import section --- #
 import os
 import torch
 import torch.nn as nn
