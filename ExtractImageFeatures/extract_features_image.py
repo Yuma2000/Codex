@@ -4,7 +4,6 @@ TRECVid2009 devel08 の映像に対して特徴抽出する．
 2048次元になるようにResNet50を用いて特徴抽出
 Keyフレームで画像から抽出
 """
-
 import os, cv2, h5py, skimage
 import numpy as np
 import sys
@@ -16,7 +15,6 @@ from model_extract_features2 import ConvNextEncoder
 
 args = sys.argv
 
-# --- Variable declaration section --- #
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # video_root = "/home/kouki/remote-mount/tv2009/devel08/video/"  ###
 video_num = int(args[1])
@@ -103,86 +101,6 @@ def sample_frames(video_path, i2f, train=True):
     ie = torch.from_numpy(ie_numpy)
     return frame_count, ie
 
-    """
-    for i in range(0,int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),1):
-        if i == lines[j]:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, i)
-            ret, frame = cap.read()
-            if ret is False:
-                break
-            frame = frame[:,:,::-1]
-            frames.append(frame)
-            j = j+1
-            if len(frames) % 1 ==0:
-                print("i2f {}st".format(i))
-                frames = np.array(frames)
-                frame_list = frames
-                del frames
-                frames = []
-                frame_list = np.array([preprocess_frame(x) for x in frame_list])
-                frame_list = frame_list.transpose((0,3,1,2))
-                with torch.no_grad():
-                    frame_list = torch.from_numpy(frame_list).to(device)
-                torch.cuda.empty_cache()
-                ie_little = i2f(frame_list)
-                del frame_list
-
-                if counter == 0:
-                    # ie_numpy = ie_little.detach().clone().cpu().numpy()
-                    print("A")
-                    ie_numpy = ie_little.detach().cpu().numpy()
-                else:
-                    print("B")
-                    # ie_numpy = np.concatenate([ie_numpy,ie_little.detach().clone().cpu().numpy()])
-                    ie_numpy = np.concatenate([ie_numpy,ie_little.detach().cpu().numpy()])
-                del ie_little
-                counter += 1
-            frame_count += 1
-            print(frame_count)
-            #ie = torch.from_numpy(ie_numpy)
-        else:
-            continue
-        #ie = torch.from_numpy(ie_numpy)
-    return frame_count, ie
-    """
-    """
-    for i in range(0,int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),10):
-        cap.set(cv2.CAP_PROP_POS_FRAMES, i)
-        ret, frame = cap.read()
-        if ret is False:
-            break
-        frame = frame[:,:,::-1]
-        frames.append(frame)
-        del frame
-
-        if len(frames) % 5 ==0:
-            print("i2f {}st".format(i))
-            frames = np.array(frames)
-            frame_list = frames
-            del frames
-            frames = []
-            frame_list = np.array([preprocess_frame(x) for x in frame_list])
-            frame_list = frame_list.transpose((0,3,1,2))
-            with torch.no_grad():
-                frame_list = torch.from_numpy(frame_list).to(device)
-            torch.cuda.empty_cache()
-            ie_little = i2f(frame_list)
-            del frame_list
-
-            if counter == 0:
-                # ie_numpy = ie_little.detach().clone().cpu().numpy()
-                ie_numpy = ie_little.detach().cpu().numpy()
-            else:
-                # ie_numpy = np.concatenate([ie_numpy,ie_little.detach().clone().cpu().numpy()])
-                ie_numpy = np.concatenate([ie_numpy,ie_little.detach().cpu().numpy()])
-            del ie_little
-            counter += 1
-            frame_count += 5
-        #frame_count += 1
-    print(frame_count)
-    ie = torch.from_numpy(ie_numpy)
-    return frame_count, ie
-    """
 
 # 前処理
 # 呼び出し元：preprocess_frame関数
@@ -268,89 +186,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-# -----------------------------以下，不要な関数-------------------------------------- #
-
-def sample_frames_old(video_path, train=True):  # 現在は使われてないっぽい
-    '''
-    計算を減らすためにビデオフレームをサンプリングする．
-    等間隔でmax_framesフレームを取得する．
-    '''
-    try:
-        cap = cv2.VideoCapture(video_path)
-        cap2 = cv2.VideoCapture(video_path)
-    except:
-        print('Can not open %s.' % video_path)
-        pass
-
-    frames = []
-    frame_count = 0
-    num = 0
-    while True:
-        ret, frame = cap.read()
-        if ret is False:
-            break
-        frame_count += 1
-    print("# of frames = {}".format(frame_count))
-
-    indices = np.linspace(8, frame_count - 7, max_frames, endpoint=False, dtype=int)
-    print("IDs of sampled frames: {}".format(indices))
-    
-    while True:
-        rt, fr = cap2.read()
-        if rt is False:
-            break
-        for i in range(len(indices)):
-            if num == indices[i]:
-                fr = fr[:, :, ::-1]
-                frames.append(fr)
-        num += 1
-    frames = np.array(frames)
-    frame_list = frames
-    
-    return frame_list, frame_count
-
-
-# 特徴抽出用の関数．現在は使用していない．
-def extract_feature_old(i2f):
-    videos = sorted(os.listdir(video_root), key = sort_key)
-    nvideos = len(videos)
-    print("nvideos = {}".format(nvideos))
-    ##
-    if os.path.exists(feature_h5_path):
-        h5 = h5py.File(feature_h5_path, "r+")
-        dataset_feats = h5[feature_h5_feats]
-        dataset_lens = h5[feature_h5_lens]
-    else:
-        h5 = h5py.File(feature_h5_path, "w")
-        """
-        dataset_feats = h5.create_dataset(feature_h5_feats,
-                                          (nvideos, max_frames, feature_size),
-                                          dtype='float32')
-        """
-        dataset_feats = h5.create_dataset(feature_h5_feats,
-                                          (nvideos, max_frames, feature_size),
-                                          dtype="float32")
-        dataset_lens = h5.create_dataset(feature_h5_lens, (nvideos,), dtype='int')
-
-    for i, video in enumerate(videos):
-        print("{}: {}".format(i, video))
-        video_path = os.path.join(video_root, video)
-        # frame_list, frame_count = sample_frames(video_path, train=True)
-        frame_count, ie = sf(video_path, i2f, train=True)
-        """
-        frame_list = np.array([preprocess_frame(x) for x in frame_list])
-        frame_list = frame_list.transpose((0, 3, 1, 2))
-        with torch.no_grad():
-            frame_list = torch.from_numpy(frame_list).to(device)
-        feats = np.zeros((max_frames, feature_size), dtype='float32')
-        ie = i2f(frame_list)
-        """
-        feats = np.zeros((frame_count, feature_size), dtype='float32')
-
-        feats[:frame_count,:] = ie.detach().cpu().numpy()
-        dataset_feats[i] = feats
-        dataset_lens[i] = frame_count
