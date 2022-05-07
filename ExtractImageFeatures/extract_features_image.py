@@ -10,19 +10,21 @@ import numpy as np
 import sys
 import torch
 from model_extract_features import I2FEncoder
-from model_extract_features import ConvNextEncoder
+# from model_extract_features import ConvNextEncoder
+from model_extract_features2 import ConvNextEncoder
 # import DebugFunc as df
 
 args = sys.argv
 
 # --- Variable declaration section --- #
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-video_root = "/home/kouki/remote-mount/tv2009/devel08/video/"
-vid_num = int(args[1])
-key_frame = "./all_frames/BG_" +str(vid_num)+"_keyframes.txt"
+# video_root = "/home/kouki/remote-mount/tv2009/devel08/video/"  ###
+video_num = int(args[1])
+key_frames_txt = "./all_frames/BG_" +str(video_num)+"_keyframes.txt"
 
-video_name = "BG_" + str(vid_num) + ".mpg"
-video_path = video_root + video_name
+# video_name = "BG_" + str(video_num) + ".mpg"  ###
+video_name_new = "BG_" + str(video_num)
+# video_path = video_root + video_name  #どこにあるどのビデオかを特定する．  ###
 sort_key = lambda x: int(x[3:-4])
 feature_h5_path = "./feats/tv_features.h5"
 feature_h5_feats = 'feats'
@@ -30,22 +32,24 @@ feature_h5_lens = 'lens'
 max_frames = 50000 #250#100
 feature_size = 2048
 
-# --- Code section --- #
 
-# extract_features関数から呼び出される．
+# 呼び出し元：extract_features関数
 def sample_frames(video_path, i2f, train=True):
 
+    """
+    ビデオは使わないのでこの例外処理はコメントアウトしておく．
     try:
         cap = cv2.VideoCapture(video_path)
     except:
         print("Can not open %s." % video_path)
         pass
+    """
 
     frames = []
     frame_count = 0
     counter = 0
 
-    with open(key_frame) as f:
+    with open(key_frames_txt) as f:
         lines = f.readlines()
     for i in range(0,int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),1):
         #ret, frame = cap.read()
@@ -58,15 +62,20 @@ def sample_frames(video_path, i2f, train=True):
             #    break
             #print(frame)
             #print(len(lines))
-            if i == int(lines[j]):
+            if i == int(lines[j]):  #キーフレームの時
                 print("frame :{}".format(lines[j]))
-                cap.set(cv2.CAP_PROP_POS_FRAMES, i)
+                cap.set(cv2.CAP_PROP_POS_FRAMES, i)  #i番目のフレームからスタート
                 ret, frame = cap.read()
+
+                #ビデオの最後までいった時
                 if ret is False:
                     break
+                
                 frame = frame[:,:,::-1]
                 frames.append(frame)
                 del frame
+
+                #フレームが5つ溜まったら
                 if len(frames) % 5 ==0:
                     frames = np.array(frames)
                     frame_list = frames
@@ -176,10 +185,9 @@ def sample_frames(video_path, i2f, train=True):
     """
 
 # 前処理
-# preprocess_frame関数から呼び出される．
+# 呼び出し元：preprocess_frame関数
 def resize_frame(image, target_height=224, target_width=224):
     if len(image.shape) == 2:
-        # 把单通道的灰度图复制三遍变成三通道的图片
         # シングルチャンネルのグレースケール画像を3回コピーして3チャンネルの画像にする．
         image = np.tile(image[:, :, None], 3)
     elif len(image.shape) == 4:
@@ -203,7 +211,7 @@ def resize_frame(image, target_height=224, target_width=224):
     return cv2.resize(resized_image, (target_height, target_width))
 
 # 前処理
-# sf関数から呼び出される．
+# 呼び出し元：sample_frames関数
 def preprocess_frame(image, target_height=224, target_width=224):
     image = resize_frame(image, target_height, target_width)
     image = skimage.img_as_float(image).astype(np.float32)
@@ -213,16 +221,18 @@ def preprocess_frame(image, target_height=224, target_width=224):
     return image
 
 
-# 特徴抽出用の関数．こちらを使用している．
+# 特徴量をh5ファイルへ書き込む．
 def extract_features(i2f):
     videos = sorted(os.listdir(video_root), key = sort_key)
-    nvideos = len(videos)
+    nvideos = len(videos)  #動画の本数
 
+    # 全てのビデオでforを回す．
     for i, video in enumerate(videos):
+        # 使うビデオでなければ飛ばす．
         if int(video[3:-4]) != vid_num:
             continue
         print("No.{} Video Name : {}".format(i,video))
-        video_path = os.path.join(video_root, video)
+        # video_path = os.path.join(video_root, video)  ###
         frame_count, ie = sample_frames(video_path, i2f, train=True)
         feats = np.zeros((frame_count, feature_size), dtype="float32")
         # feature_h5_path = "./AllKeyVideos/"+video[:-4]+"_features.h5" #ここのpathを変えておけば現在の.h5ファイルを消さずにすむ．
@@ -262,11 +272,12 @@ if __name__ == "__main__":
 
 
 
-# ------------------------------------------------------------------------------- # 
+# -----------------------------以下，不要な関数-------------------------------------- #
 
 def sample_frames_old(video_path, train=True):  # 現在は使われてないっぽい
     '''
-    計算を減らすためにビデオフレームをサンプリングする．等間隔でmax_framesフレームを取得する．
+    計算を減らすためにビデオフレームをサンプリングする．
+    等間隔でmax_framesフレームを取得する．
     '''
     try:
         cap = cv2.VideoCapture(video_path)
