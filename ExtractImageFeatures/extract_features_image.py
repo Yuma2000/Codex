@@ -8,10 +8,8 @@ import os, cv2, h5py, skimage
 import numpy as np
 import sys
 import torch
-from model_extract_features import I2FEncoder
-# from model_extract_features import ConvNextEncoder
-from model_extract_features2 import ConvNextEncoder
-# import DebugFunc as df
+from model_extract_features import ResNet50Encoder
+from model_extract_features import ConvNextEncoder
 
 args = sys.argv
 
@@ -32,7 +30,7 @@ feature_size = 2048
 
 
 # 呼び出し元：extract_features関数
-def sample_frames(video_path, i2f, train=True):
+def sample_frames(video_path, encoder, train=True):
 
     """
     ビデオは使わないのでこの例外処理はコメントアウトしておく．
@@ -85,7 +83,7 @@ def sample_frames(video_path, i2f, train=True):
                     with torch.no_grad():
                         frame_list = torch.from_numpy(frame_list).to(device)
                     torch.cuda.empty_cache()
-                    ie_little = i2f(frame_list)
+                    ie_little = encoder(frame_list)
 
                     del frame_list
 
@@ -140,7 +138,7 @@ def preprocess_frame(image, target_height=224, target_width=224):
 
 
 # 特徴量をh5ファイルへ書き込む．
-def extract_features(i2f):
+def extract_features(encoder):
     videos = sorted(os.listdir(video_root), key = sort_key)
     nvideos = len(videos)  #動画の本数
 
@@ -151,7 +149,7 @@ def extract_features(i2f):
             continue
         print("No.{} Video Name : {}".format(i,video))
         # video_path = os.path.join(video_root, video)  ###
-        frame_count, ie = sample_frames(video_path, i2f, train=True)
+        frame_count, ie = sample_frames(video_path, encoder, train=True)
         feats = np.zeros((frame_count, feature_size), dtype="float32")
         # feature_h5_path = "./AllKeyVideos/"+video[:-4]+"_features.h5" #ここのpathを変えておけば現在の.h5ファイルを消さずにすむ．
         feature_h5_path = "./AllKeyVideos2/" +video[:-4]+ "_features.h5" #元の特徴量を上書きしないように仮フォルダを作成．
@@ -175,13 +173,14 @@ def extract_features(i2f):
 
 
 def main():
-    # i2f = I2FEncoder()
-    i2f = ConvNextEncoder()
-    # i2f.eval()  #検証用モードにする．ConvNeXtにはおそらくこの検証用モードはない．
-    # i2f = torch.nn.DataParallel(i2f,device_ids=[0,1,2,3])  #GPUを複数使い，並列処理する用
-    # i2f.to(device)
-    # extract_feature(i2f)
-    extract_features(i2f)
+    # encoder = ResNet50Encoder()
+    encoder = ConvNextEncoder()
+    # encoder.eval()  #検証用モードにする．ConvNeXtにはおそらくこの検証用モードはない．
+    # GPUを複数使い，並列処理する．
+    # encoder = torch.nn.DataParallel(encoder,device_ids=[0,1,2,3])  
+    # encoder.to(device)
+    # extract_feature(encoder)
+    extract_features(encoder)
     print("--- !Extract Features Fin ---")
 
 if __name__ == "__main__":
