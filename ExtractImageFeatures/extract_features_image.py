@@ -29,6 +29,44 @@ max_frames = 50000 #250#100
 feature_size = 2048
 
 
+# 前処理
+# 呼び出し元：preprocess_frame関数
+def resize_frame(image, target_height=224, target_width=224):
+    if len(image.shape) == 2:
+        # シングルチャンネルのグレースケール画像を3回コピーして3チャンネルの画像にする．
+        image = np.tile(image[:, :, None], 3)
+    elif len(image.shape) == 4:
+        image = image[:, :, :, 0]
+
+    height, width, channels = image.shape
+    if height == width:
+        resized_image = cv2.resize(image, (target_height, target_width))
+    elif height < width:
+        resized_image = cv2.resize(image, (int(width * target_height / height),
+                                           target_width))
+        cropping_length = int((resized_image.shape[1] - target_height) / 2)
+        resized_image = resized_image[:,
+                                      cropping_length:resized_image.shape[1] - cropping_length]
+    else:
+        resized_image = cv2.resize(image, (target_height,
+                                           int(height * target_width / width)))
+        cropping_length = int((resized_image.shape[0] - target_width) / 2)
+        resized_image = resized_image[cropping_length:
+                                      resized_image.shape[0] - cropping_length]
+    return cv2.resize(resized_image, (target_height, target_width))
+
+
+# 前処理
+# 呼び出し元：sample_frames関数
+def preprocess_frame(image, target_height=224, target_width=224):
+    image = resize_frame(image, target_height, target_width)
+    image = skimage.img_as_float(image).astype(np.float32)
+    # ILSVRCデータセットの画像の平均（RGB形式）に基づくホワイトニング
+    image -= np.array([0.485, 0.456, 0.406])
+    image /= np.array([0.229, 0.224, 0.225])
+    return image
+
+
 # 呼び出し元：extract_features関数
 def sample_frames(video_path, encoder, train=True):
 
@@ -98,43 +136,6 @@ def sample_frames(video_path, encoder, train=True):
     return frame_count, ie
 
 
-# 前処理
-# 呼び出し元：preprocess_frame関数
-def resize_frame(image, target_height=224, target_width=224):
-    if len(image.shape) == 2:
-        # シングルチャンネルのグレースケール画像を3回コピーして3チャンネルの画像にする．
-        image = np.tile(image[:, :, None], 3)
-    elif len(image.shape) == 4:
-        image = image[:, :, :, 0]
-
-    height, width, channels = image.shape
-    if height == width:
-        resized_image = cv2.resize(image, (target_height, target_width))
-    elif height < width:
-        resized_image = cv2.resize(image, (int(width * target_height / height),
-                                           target_width))
-        cropping_length = int((resized_image.shape[1] - target_height) / 2)
-        resized_image = resized_image[:,
-                                      cropping_length:resized_image.shape[1] - cropping_length]
-    else:
-        resized_image = cv2.resize(image, (target_height,
-                                           int(height * target_width / width)))
-        cropping_length = int((resized_image.shape[0] - target_width) / 2)
-        resized_image = resized_image[cropping_length:
-                                      resized_image.shape[0] - cropping_length]
-    return cv2.resize(resized_image, (target_height, target_width))
-
-# 前処理
-# 呼び出し元：sample_frames関数
-def preprocess_frame(image, target_height=224, target_width=224):
-    image = resize_frame(image, target_height, target_width)
-    image = skimage.img_as_float(image).astype(np.float32)
-    # ILSVRCデータセットの画像の平均（RGB形式）に基づくホワイトニング
-    image -= np.array([0.485, 0.456, 0.406])
-    image /= np.array([0.229, 0.224, 0.225])
-    return image
-
-
 # 特徴量をh5ファイルへ書き込む．
 def extract_features(encoder):
     videos = sorted(os.listdir(video_root), key = sort_key)
@@ -182,7 +183,7 @@ def main():
     # encoder = torch.nn.DataParallel(encoder,device_ids=[0,1,2,3])  
     # encoder.to(device)
     extract_features(encoder)
-    print("--- !Extract Features Fin ---")
+    print("--- Extract Features Fin ---")
 
 if __name__ == "__main__":
     main()
