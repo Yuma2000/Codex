@@ -88,10 +88,8 @@ def sample_frames(video_path, encoder, train=True):
                     del frame_list
 
                     if counter == 0:
-                        # ie_numpy = ie_little.detach().clone().cpu().numpy()
                         ie_numpy = ie_little.detach().cpu().numpy()
                     else:
-                        # ie_numpy = np.concatenate([ie_numpy,ie_little.detach().clone().cpu().numpy()])
                         ie_numpy = np.concatenate([ie_numpy,ie_little.detach().cpu().numpy()])
                     del ie_little
                     counter += 1
@@ -151,8 +149,12 @@ def extract_features(encoder):
         # video_path = os.path.join(video_root, video)  ###
         frame_count, ie = sample_frames(video_path, encoder, train=True)
         feats = np.zeros((frame_count, feature_size), dtype="float32")
-        # feature_h5_path = "./AllKeyVideos/"+video[:-4]+"_features.h5" #ここのpathを変えておけば現在の.h5ファイルを消さずにすむ．
-        feature_h5_path = "./AllKeyVideos2/" +video[:-4]+ "_features.h5" #元の特徴量を上書きしないように仮フォルダを作成．
+        """
+        ここのpathを変えておけば現在の.h5ファイルを消さずにすむ．
+        feature_h5_path = "./AllKeyVideos/"+video[:-4]+"_features.h5" 
+        """
+        #元の特徴量を上書きしないように仮フォルダを作成．
+        feature_h5_path = "./AllKeyVideos2/" +video[:-4]+ "_features.h5"
         if os.path.exists(feature_h5_path):
             h5 = h5py.File(feature_h5_path, "r+")
             dataset_feats = h5[feature_h5_feats]
@@ -179,7 +181,6 @@ def main():
     # GPUを複数使い，並列処理する．
     # encoder = torch.nn.DataParallel(encoder,device_ids=[0,1,2,3])  
     # encoder.to(device)
-    # extract_feature(encoder)
     extract_features(encoder)
     print("--- !Extract Features Fin ---")
 
