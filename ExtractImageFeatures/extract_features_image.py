@@ -12,12 +12,10 @@ from model_extract_features import ResNet50Encoder
 from model_extract_features import ConvNextEncoder
 
 args = sys.argv
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # video_root = "/home/kouki/remote-mount/tv2009/devel08/video/"  ###
 video_num = int(args[1])
 key_frames_txt = "./all_frames/BG_" +str(video_num)+"_keyframes.txt"
-
 # video_name = "BG_" + str(video_num) + ".mpg"  ###
 video_name_new = "BG_" + str(video_num)
 # video_path = video_root + video_name  #どこにあるどのビデオかを特定する．  ###
@@ -69,7 +67,6 @@ def preprocess_frame(image, target_height=224, target_width=224):
 
 # 呼び出し元：extract_features関数
 def sample_frames(video_path, encoder, train=True):
-
     """
     ビデオは使わないのでこの例外処理はコメントアウトしておく．
     try:
@@ -78,7 +75,6 @@ def sample_frames(video_path, encoder, train=True):
         print("Can not open %s." % video_path)
         pass
     """
-
     frames = []
     frame_count = 0
     counter = 0
