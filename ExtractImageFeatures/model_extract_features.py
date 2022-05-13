@@ -41,4 +41,4 @@ class ConvNextEncoder():
     inputs = self.feature_extractor(img, return_tensors="pt")
     with torch.no_grad():
       outputs = self.model(**inputs)
-    return outputs.last_hidden_state
+    return outputs.pooler_output  # torch.Size([1, 2048])
