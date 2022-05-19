@@ -3,7 +3,6 @@ import random
 import math
 import torch
 import torch.optim as optim
-import torch.nn as nn
 import torch.nn.functional as F
 import gym
 import sys
@@ -13,12 +12,9 @@ import datetime
 import glob
 from collections import namedtuple
 from memory_profiler import profile
-import matplotlib
 import matplotlib.pyplot as plt
-import DebugFunc as df
 
-import Reinf_Envs
-from model import DQN, DQN_svr
+from model import DQN_svr
 from replayMemory import Transition
 from replayMemory import ReplayMemory
 from dataLoader import get_eval_loader
@@ -44,12 +40,14 @@ memory_size = 10000
 memory = ReplayMemory(memory_size)
 first_action = torch.tensor([n_actions-1], dtype=torch.long).to(device)
 
+
 # seedは0にして使うことがほとんど
 def set_seed(seed=0):
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
+
 
 # 検証用の関数
 def compute_qvalue(val_video_name, dfs_actions, csv_file3, epoch, csv_file4):
@@ -92,7 +90,7 @@ def compute_qvalue(val_video_name, dfs_actions, csv_file3, epoch, csv_file4):
                 mem = mem / (torch.norm(mem, dim=1).unsqueeze(1))
                 V_p = mem[action].squeeze(0)
                 mem_2 = torch.mv(mem, v_next.T)
-                r_norm = ((mem_2[action] - sim_min) / (sim_max - sim_min)).item()  #正規化している．
+                r_norm = ((mem_2[action] - sim_min) / (sim_max - sim_min)).item()  #正規化
 
                 q_value.append(q_stack)
                 action_stack.append(action)
@@ -122,6 +120,7 @@ def compute_qvalue(val_video_name, dfs_actions, csv_file3, epoch, csv_file4):
 
     #print(qvalue_average)
     return qvalue_average, e_action, val_reward_average
+
 
 #モデルを保存する．
 def model_save(train_video_name, key, val_video_name):
@@ -210,6 +209,7 @@ def fig_creat(epochs,n_loss,f_loss,f_reward,f_reward_comparison, train_video_nam
     plt.plot(x_ax1, val_reward_stack, label="val_reward")
     fig7.savefig(val_reward_save_path)
 
+
 def feature_norm(videos_src):    
     videos_src = videos_src.to(device)
     videos_src2 = videos_src.reshape((videos_src.shape[1], videos_src.shape[2]))
@@ -221,6 +221,7 @@ def feature_norm(videos_src):
     sim_min = sims.min()
     videos = torch.unsqueeze(videos, 0)
     return videos, sim_max, sim_min
+
 
 #行動を選択する．
 def select_action(state, frame):
@@ -239,6 +240,7 @@ def select_action(state, frame):
             return policy_net(state).argmax().view(1)
     else:
         return torch.tensor([random.randrange(n_actions)], dtype=torch.long).to(device)
+
 
 def optimize_model():
     BATCH_SIZE = 128
@@ -276,7 +278,8 @@ def optimize_model():
 #@profile
 def main(train_video_name, val_video_name):
 
-    csv_path = "./oneVideo_result/" + "train_" + train_video_name + "-val_" + val_video_name + "/csv_file/"
+    # csv_path = "./oneVideo_result/" + "train_" + train_video_name + "-val_" + val_video_name + "/csv_file/"
+    csv_path = "./oneVideo_result2/" + "train_" + train_video_name + "-val_" + val_video_name + "/csv_file/"
     if not os.path.isdir(csv_path):
         os.makedirs(csv_path)
     csv_file1 = os.path.join(csv_path, "all_result.csv")
@@ -333,7 +336,6 @@ def main(train_video_name, val_video_name):
     val_reward_stack = []
 
     """
-
     if video_name == "BG_10241":
         dfs_actions = [10,10,10,10,10,1,4,8]
     if video_name == "BG_10864":
@@ -346,7 +348,6 @@ def main(train_video_name, val_video_name):
         dfs_actions = [10,4,10,7,7,6,10,10]
     else:
         dfs_actions = [10,10,10,10,10,1,4,8]
-
     """
 
     dfs_all_csv_path = "dfs_result/dfs_result_max_action.csv"
@@ -360,7 +361,6 @@ def main(train_video_name, val_video_name):
                     if i == 0:
                         continue
                     dfs_actions.append(int(low[i]))
-    
 
     for epoch in range(epochs):
         print("Epoch : {}/{}".format(epoch, epochs))
@@ -369,7 +369,9 @@ def main(train_video_name, val_video_name):
         e_reward_comparison = 0
         csv_data = []
         e_loss = 0
-        for feats_path in glob.glob("./Features/AllKeyVideos/" + train_video_name + "_features.h5"):
+        # for feats_path in glob.glob("./Features/AllKeyVideos/" + train_video_name + "_features.h5"):
+        # convnextで抽出した特徴を使う．
+        for feats_path in glob.glob("../Extract_ImageFeatures/AllKeyVideos2/" + train_video_name + "_features.h5"):
             feature = get_eval_loader(train_range, feats_path)
             #print(feats_path)
             for v_num, (videos_src, video_ids) in enumerate(feature):
@@ -421,7 +423,6 @@ def main(train_video_name, val_video_name):
             writer = csv.writer(f5)
             data = [str(epoch), train_video_name, str(e_reward_comparison.item())]
             writer.writerow(data)
-
 
         with open(csv_file1, "a") as f1:
             writer = csv.writer(f1)
