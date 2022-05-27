@@ -7,8 +7,7 @@ python extract_features_image3.py BG_335
 """
 import os, cv2, h5py, skimage
 import numpy as np
-import sys
-import torch
+import sys, torch
 from model_extract_features import ConvNextEncoder
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
