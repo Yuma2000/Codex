@@ -4,3 +4,9 @@ Extract_ImageFeatures_old
 all_frames
 RL_allVideos
 RL_oneVideo_MSR_VTT
+RL_oneVideo_learningrate_chenge
+RL_oneVideo_MSVD
+RL_oneVideo_MSVD_Thorver
+RL_oneVideo_old
+RL_oneVideo_reward_change
+RL_oneVideo_teacher_checked_old
